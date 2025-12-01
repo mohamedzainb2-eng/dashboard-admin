@@ -28,7 +28,7 @@ function ProtectedRoute() {
   return <Outlet />;
 }
 
-const basename = import.meta.env.BASE_URL;
+const basename = "/dashboard-admin/";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
