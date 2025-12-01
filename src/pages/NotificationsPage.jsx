@@ -1,64 +1,64 @@
-// src\pages\NotificationsPage.jsx
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardHeader, CardBody } from "../components/ui/Card";
-import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
+import Button from "../components/ui/Button";
 import { useNotificationsStore } from "../hooks/useNotificationsStore";
 import { useSettingsStore } from "../hooks/useSettingsStore";
-import { useUIStore } from "../hooks/useUIStore";
-
-const filters = ["all", "unread", "orders", "system"];
 
 export default function NotificationsPage() {
-  const { notifications, markAsRead, markAllAsRead } =
-    useNotificationsStore();
+  const notifications = useNotificationsStore((s) => s.notifications || []);
+  const markAllRead =
+    useNotificationsStore((s) => s.markAllRead) || (() => {});
+  const clearAll =
+    useNotificationsStore((s) => s.clearAll) || (() => {});
+
   const language = useSettingsStore((s) => s.language);
-  const showToast = useUIStore((s) => s.showToast);
+  const [filter, setFilter] = useState("all");
 
-  const [activeFilter, setActiveFilter] = useState("all");
+  const isArabic = language === "ar";
 
-  const t =
-    language === "ar"
-      ? {
-          title: "الإشعارات",
-          subtitle: "عرض وإدارة جميع إشعارات النظام والطلبات والمستخدمين.",
-          markAll: "تعيين الكل كمقروء",
-          noNotif: "لا توجد إشعارات مطابقة.",
-          markAllToast: "تم تعيين جميع الإشعارات كمقروءة",
-        }
-      : {
-          title: "Notifications",
-          subtitle: "View and manage all system, order and user alerts.",
-          markAll: "Mark all as read",
-          noNotif: "No matching notifications.",
-          markAllToast: "All notifications marked as read",
-        };
+  const t = isArabic
+    ? {
+        title: "الإشعارات",
+        subtitle: "عرض وإدارة جميع الإشعارات في النظام.",
+        all: "الكل",
+        unread: "غير المقروءة",
+        read: "المقروءة",
+        markAllRead: "تعيين الكل كمقروء",
+        clearAll: "مسح الكل",
+        empty: "لا توجد إشعارات حالياً.",
+        typeOrder: "طلب",
+        typeUser: "مستخدم",
+        typeSystem: "نظام",
+      }
+    : {
+        title: "Notifications",
+        subtitle: "View and manage all system notifications.",
+        all: "All",
+        unread: "Unread",
+        read: "Read",
+        markAllRead: "Mark all as read",
+        clearAll: "Clear all",
+        empty: "No notifications at the moment.",
+        typeOrder: "Order",
+        typeUser: "User",
+        typeSystem: "System",
+      };
 
-  const filterLabel = (key) => {
-    if (language === "ar") {
-      if (key === "all") return "الكل";
-      if (key === "unread") return "غير مقروءة";
-      if (key === "orders") return "الطلبات";
-      if (key === "system") return "النظام";
-    } else {
-      if (key === "all") return "All";
-      if (key === "unread") return "Unread";
-      if (key === "orders") return "Orders";
-      if (key === "system") return "System";
+  const filtered = useMemo(() => {
+    if (filter === "unread") {
+      return notifications.filter((n) => !n.read);
     }
-    return key;
-  };
+    if (filter === "read") {
+      return notifications.filter((n) => n.read);
+    }
+    return notifications;
+  }, [notifications, filter]);
 
-  const filtered = notifications.filter((n) => {
-    if (activeFilter === "unread") return !n.read;
-    if (activeFilter === "orders") return n.type === "order" || n.type === "payment";
-    if (activeFilter === "system") return n.type === "system" || n.type === "user";
-    return true;
-  });
-
-  const handleMarkAll = () => {
-    markAllAsRead();
-    showToast({ type: "success", message: t.markAllToast });
+  const typeLabel = (type) => {
+    if (type === "order") return t.typeOrder;
+    if (type === "user") return t.typeUser;
+    return t.typeSystem;
   };
 
   return (
@@ -68,80 +68,86 @@ export default function NotificationsPage() {
           <h1 className="text-xl font-semibold">{t.title}</h1>
           <p className="text-sm text-slate-500">{t.subtitle}</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleMarkAll}
-        >
-          {t.markAll}
-        </Button>
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            size="sm"
+            variant={filter === "all" ? "primary" : "outline"}
+            onClick={() => setFilter("all")}
+          >
+            {t.all}
+          </Button>
+          <Button
+            size="sm"
+            variant={filter === "unread" ? "primary" : "outline"}
+            onClick={() => setFilter("unread")}
+          >
+            {t.unread}
+          </Button>
+          <Button
+            size="sm"
+            variant={filter === "read" ? "primary" : "outline"}
+            onClick={() => setFilter("read")}
+          >
+            {t.read}
+          </Button>
+        </div>
       </div>
 
       <Card>
         <CardHeader
-          title={language === "ar" ? "تصفية الإشعارات" : "Filter notifications"}
+          title={t.title}
           actions={
-            <div className="flex gap-2 flex-wrap">
-              {filters.map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setActiveFilter(f)}
-                  className={`px-3 py-1 rounded-lg text-xs font-medium ${
-                    activeFilter === f
-                      ? "bg-primary text-white"
-                      : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
-                  }`}
+            notifications.length > 0 && (
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => markAllRead()}
                 >
-                  {filterLabel(f)}
-                </button>
-              ))}
-            </div>
+                  {t.markAllRead}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => clearAll()}
+                >
+                  {t.clearAll}
+                </Button>
+              </div>
+            )
           }
         />
-        <CardBody>
-          {filtered.length === 0 ? (
-            <p className="text-sm text-slate-500">{t.noNotif}</p>
-          ) : (
-            <ul className="space-y-2 text-sm">
-              {filtered.map((n) => (
-                <li
-                  key={n.id}
-                  className="flex items-start justify-between border border-slate-100 dark:border-slate-800 rounded-lg px-3 py-2 bg-white dark:bg-slate-900"
-                >
-                  <div>
-                    <p className="font-semibold">
-                      {language === "ar" ? n.titleAr : n.title}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {language === "ar" ? n.messageAr : n.message}
-                    </p>
-                    <p className="text-[11px] text-slate-400 mt-1">
-                      {n.time}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <Badge color={n.read ? "gray" : "blue"}>
-                      {language === "ar"
-                        ? n.read
-                          ? "مقروء"
-                          : "غير مقروء"
-                        : n.read
-                        ? "Read"
-                        : "Unread"}
-                    </Badge>
-                    {!n.read && (
-                      <button
-                        onClick={() => markAsRead(n.id)}
-                        className="text-[11px] text-primary hover:underline"
-                      >
-                        {language === "ar" ? "تعيين كمقروء" : "Mark as read"}
-                      </button>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
+        <CardBody className="space-y-2">
+          {filtered.length === 0 && (
+            <p className="text-sm text-slate-500">{t.empty}</p>
           )}
+
+          <div className="space-y-2">
+            {filtered.map((n) => (
+              <div
+                key={n.id}
+                className={
+                  "rounded-lg border px-3 py-2 text-sm flex items-start justify-between gap-3 " +
+                  (n.read
+                    ? "bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800"
+                    : "bg-primary/5 border-primary/40")
+                }
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{n.title}</span>
+                    <Badge color={n.read ? "gray" : "blue"}>
+                      {typeLabel(n.type)}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
+                    {n.message}
+                  </p>
+                  <p className="text-[11px] text-slate-400">{n.time}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </CardBody>
       </Card>
     </div>

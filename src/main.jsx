@@ -1,3 +1,4 @@
+// src/main.jsx
 import React from "react";
 import ReactDOM from "react-dom/client";
 import {
@@ -16,6 +17,7 @@ import OrdersPage from "./pages/OrdersPage";
 import OrderDetailsPage from "./pages/OrderDetailsPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProductsPage from "./pages/ProductsPage";
+import NotificationsPage from "./pages/NotificationsPage";
 import LoginPage from "./pages/LoginPage";
 import { useAuthStore } from "./hooks/useAuthStore";
 
@@ -48,6 +50,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             <Route path="orders/:orderId" element={<OrderDetailsPage />} />
             <Route path="products" element={<ProductsPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="notifications" element={<NotificationsPage />} />
           </Route>
         </Route>
       </Routes>
